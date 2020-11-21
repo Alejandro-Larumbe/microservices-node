@@ -1,6 +1,7 @@
 
 const express = require('express');
 const csrf = require('csurf');
+const fetch = require('node-fetch')
 const { check, validationResult } = require('express-validator');
 
 const db = require('./db/models');
@@ -151,5 +152,21 @@ router.post('/book/delete/:id(\\d+)', csrfProtection, asyncHandler(async (req, r
   await book.destroy();
   res.redirect('/');
 }));
+
+router.get('/book/rate/:id(\\d+)', csrfProtection,
+  asyncHandler(async (req, res) => {
+    const bookId = parseInt(req.params.id, 10);
+    const book = await db.Book.findByPk(bookId);
+    const ratings = await fetch(`http://host.docker.internal:5000/ratings/${req.params.id}`);
+    console.log(ratings)
+    book.rating = ratings.average || 'No rating';
+    // console.log(book)
+    res.render('book-rate', {
+      title: 'Rate this Book',
+      book,
+      csrfToken: req.csrfToken(),
+    });
+  }));
+
 
 module.exports = router;
